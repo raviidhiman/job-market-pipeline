@@ -1,12 +1,60 @@
-\# Remote Job Market Pipeline
+<div align="center">
 
 
 
-An end-to-end data pipeline that scrapes remote job postings from three sources, stores and deduplicates them, computes daily analytics, generates an AI-written market summary, and displays everything in an interactive dashboard — running fully unattended on a $0/month stack (aside from a small AWS EC2 instance).
+\# 🧭 Remote Job Market Pipeline
 
 
 
-\*\*Live dashboard:\*\* https://job-market-pipeliine.streamlit.app/
+\*\*An end-to-end data pipeline that scrapes, stores, analyzes, and reports on the remote job market — fully automated, running unattended, 24/7.\*\*
+
+
+
+\[!\[Live Dashboard](https://img.shields.io/badge/dashboard-live-2DD4BF?style=for-the-badge)](https://job-market-pipeliine.streamlit.app/)
+
+!\[Python](https://img.shields.io/badge/Python-3.14-blue?style=for-the-badge\&logo=python\&logoColor=white)
+
+!\[n8n](https://img.shields.io/badge/n8n-self--hosted-EA4B71?style=for-the-badge\&logo=n8n\&logoColor=white)
+
+!\[Postgres](https://img.shields.io/badge/Postgres-Supabase-3ECF8E?style=for-the-badge\&logo=supabase\&logoColor=white)
+
+!\[Streamlit](https://img.shields.io/badge/Streamlit-dashboard-FF4B4B?style=for-the-badge\&logo=streamlit\&logoColor=white)
+
+
+
+\*\*\[→ Open the live dashboard](https://job-market-pipeliine.streamlit.app/)\*\*
+
+
+
+</div>
+
+
+
+\---
+
+
+
+\## What this is
+
+
+
+Every day, without anyone touching it, this project runs through five stages:
+
+
+
+1\. 🔎 \*\*Scrapes\*\* — three remote-job platforms are queried in parallel for their current listings
+
+2\. 🧹 \*\*Deduplicates\*\* — each posting is matched against everything seen before by a unique `job\_id`; new postings are inserted, existing ones are updated rather than duplicated, and a "still live as of" timestamp is refreshed
+
+3\. 📊 \*\*Analyzes\*\* — skill/tag frequency is recomputed across the whole live dataset, and every posting is classified as \*active\*, \*cooling\*, or \*stale\* based on how recently it last reappeared in a scrape
+
+4\. ✍️ \*\*Reports\*\* — the day's numbers are handed to an LLM, which writes a short, plain-English summary of what's actually happening in the market
+
+5\. 📈 \*\*Displays\*\* — a public dashboard reads all of the above and renders it as filterable charts and a browsable table
+
+
+
+No manual steps, no scheduled reminders to run something by hand — the whole thing runs on its own, every 24 hours, on a $0/month stack (aside from a small EC2 instance).
 
 
 
@@ -14,21 +62,7 @@ An end-to-end data pipeline that scrapes remote job postings from three sources,
 
 
 
-\## What it does
-
-
-
-Every 24 hours, the pipeline:
-
-1\. \*\*Scrapes\*\* job postings from \[RemoteOK](https://remoteok.com), \[Arbeitnow](https://arbeitnow.com), and \[Jobicy](https://jobicy.com)
-
-2\. \*\*Deduplicates\*\* them against previously seen postings (via `job\_id` upsert) and tracks how long each posting stays live
-
-3\. \*\*Computes\*\* skill/tag frequency and a "freshness" status (active / cooling / stale) for every posting
-
-4\. \*\*Generates\*\* a plain-English market summary using an LLM (Groq / Llama)
-
-5\. \*\*Displays\*\* all of it in a two-page Streamlit dashboard with cross-filtering charts
+\---
 
 
 
@@ -36,135 +70,437 @@ Every 24 hours, the pipeline:
 
 
 
+```mermaid
+
+flowchart LR
+
+&#x20;   subgraph Sources\["Job Sources"]
+
+&#x20;       A1\[RemoteOK]
+
+&#x20;       A2\[Arbeitnow]
+
+&#x20;       A3\[Jobicy]
+
+&#x20;   end
+
+
+
+&#x20;   subgraph EC2\["AWS EC2 — self-hosted"]
+
+&#x20;       N\[n8n<br/>scheduled daily]
+
+&#x20;       C\[cron]
+
+&#x20;   end
+
+
+
+&#x20;   subgraph DB\["Supabase (Postgres)"]
+
+&#x20;       RJ\[(raw\_jobs)]
+
+&#x20;       SF\[(analysis\_skill\_frequency)]
+
+&#x20;       RF\[(analysis\_role\_freshness)]
+
+&#x20;       RP\[(reports)]
+
+&#x20;   end
+
+
+
+&#x20;   G\[Groq API<br/>Llama / gpt-oss]
+
+&#x20;   S\[Streamlit Cloud<br/>dashboard]
+
+
+
+&#x20;   A1 --> N
+
+&#x20;   A2 --> N
+
+&#x20;   A3 --> N
+
+&#x20;   N -- "upsert, deduped by job\_id" --> RJ
+
+&#x20;   C -- "analyze\_jobs.py" --> RJ
+
+&#x20;   C --> SF
+
+&#x20;   C --> RF
+
+&#x20;   C -- "generate\_report.py" --> G
+
+&#x20;   G --> RP
+
+&#x20;   RJ --> S
+
+&#x20;   SF --> S
+
+&#x20;   RF --> S
+
+&#x20;   RP --> S
+
 ```
 
-n8n (self-hosted, AWS EC2)
 
-&#x20; ├─ Schedule Trigger (daily)
 
-&#x20; ├─ 3× HTTP Request → Split Out → Edit Fields   (one branch per source)
-
-&#x20; ├─ Merge (append)
-
-&#x20; └─ Postgres upsert → Supabase
+\### Walking through it, stage by stage
 
 
 
-cron (same EC2 instance)
+\*\*① The three sources run in parallel, not in sequence.\*\*
 
-&#x20; ├─ analyze\_jobs.py     → skill frequency + role freshness → Supabase
-
-&#x20; └─ generate\_report.py  → Groq API → AI summary → Supabase
+n8n's Schedule Trigger fans out to three independent `HTTP Request` branches — one per platform — rather than calling them one after another. This matters for two reasons: it's faster, and each branch fails independently, so if one API is temporarily down (this happened — see \[Problems hit and fixed](#-problems-hit-and-fixed)), the other two still complete and save their data.
 
 
 
-Streamlit (Community Cloud)
+\*\*② Each branch is normalized into a common shape before merging.\*\*
 
-&#x20; ├─ app.py         → overview, filters, time-window explorer, cross-filter charts
-
-&#x20; └─ pages/1\_Report.py → latest AI-generated report
-
-```
+RemoteOK, Arbeitnow, and Jobicy each return wildly different JSON structures — different field names, different nesting, different date formats (RemoteOK gives an ISO date, Arbeitnow gives a Unix timestamp, Jobicy gives none at all). Each branch has its own `Split Out` (to break a nested array into individual items) and `Edit Fields` node (to rename/reshape fields into one shared schema: `job\_id`, `title`, `company`, `location`, `remote`, `tags`, `url`, `posted\_date`, `source`) before a `Merge` node combines all three into a single stream.
 
 
 
-| Layer | Tool | Why |
+\*\*③ Writing to Postgres is an upsert, not an insert.\*\*
+
+The Postgres node is set to "Insert or update rows," matching on `job\_id`. On a brand-new job, it inserts a row and sets `scraped\_at`/`last\_seen\_at` to now. On a job it's seen before, it updates `last\_seen\_at` to now but leaves `scraped\_at` untouched — so the database always knows both \*when a posting first appeared\* and \*whether it's still around\*, without ever creating a duplicate row for the same job.
+
+
+
+\*\*④ Analysis runs separately from scraping, on a delay.\*\*
+
+A cron job on the same EC2 instance runs `analyze\_jobs.py` a few minutes after n8n's daily scrape is expected to finish. It pulls the entire `raw\_jobs` table, explodes the `tags` array to count skill frequency, and computes each posting's `days\_since\_last\_seen` to classify it as active (seen in the last day), cooling (within a week), or stale (longer). Both results are written to their own analysis tables, timestamped, so the dashboard can always ask for "the latest snapshot."
+
+
+
+\*\*⑤ The report is generated from real numbers, not free-form.\*\*
+
+`generate\_report.py` runs right after the analysis job. It builds a prompt that includes the actual computed totals, skill counts, and freshness breakdown, and explicitly instructs the model not to invent numbers outside what's given — the LLM's job is to narrate the data, not generate it. The result replaces the previous report in Supabase (only the single most recent one is kept).
+
+
+
+\*\*⑥ The dashboard is a thin, read-only layer on top.\*\*
+
+Streamlit's `app.py` and `pages/1\_Report.py` never write anything back — they just query the four Supabase tables, cache the results for 10 minutes, and render them as metrics, charts, and a filterable table. All the actual work happens upstream; the dashboard's only job is to make it visible.
+
+
+
+\---
+
+
+
+\## Tech stack — what, and why
+
+
+
+| Layer | Tool | Why this, specifically |
 
 |---|---|---|
 
-| Orchestration | n8n (self-hosted) | Free, visual, handles parallel API calls cleanly |
+| 🧩 \*\*Orchestration\*\* | \[n8n](https://n8n.io) (self-hosted, Docker) | Visual workflow editor makes 3 parallel API calls + field mapping easy to build and debug; free to self-host |
 
-| Hosting | AWS EC2 (t2/t3.micro) | Free-tier eligible; see \[tradeoffs](#tradeoffs-and-decisions) below |
+| ☁️ \*\*Hosting\*\* | AWS EC2 (t2/t3.micro) | Free-tier eligible; chosen over Oracle Cloud after Oracle's card-verification and regional capacity issues made it impractical |
 
-| Database | Supabase (Postgres) | Free tier, standard SQL, connection pooler works well for scheduled/serverless-style access |
+| 🗄️ \*\*Database\*\* | \[Supabase](https://supabase.com) (Postgres) | Free tier, real SQL, and a connection pooler built for exactly this access pattern — short, scheduled connections rather than one long-lived one |
 
-| Analysis | Python (pandas, SQLAlchemy) | Runs on a daily cron job on the same EC2 instance |
+| ⏱️ \*\*Scheduling (analysis)\*\* | `cron` | Runs the Python analysis and reporting scripts daily on the same EC2 instance, a few minutes after n8n's scrape completes |
 
-| AI reporting | Groq API (Llama / gpt-oss) | Free tier, fast, avoids running an LLM locally on a 1GB-RAM instance |
+| 🐍 \*\*Analysis\*\* | Python — `pandas`, `SQLAlchemy` | Skill/tag frequency counting and role-freshness classification (active / cooling / stale) |
 
-| Dashboard | Streamlit + Plotly | Free hosting on Community Cloud, native Python, good enough interactivity for this scope |
+| 🤖 \*\*AI reporting\*\* | \[Groq API](https://groq.com) (Llama / gpt-oss) | Free, fast, hosted — deliberately \*not\* a local LLM, since the 1GB-RAM EC2 instance couldn't run one without crashing (see below) |
 
+| 📊 \*\*Dashboard\*\* | \[Streamlit](https://streamlit.io) + Plotly | Free hosting on Community Cloud, native Python, click-to-filter charts without needing a separate frontend framework |
 
-
-\## Setup
-
-
-
-1\. \*\*Database:\*\* run `sql/schema.sql` in your Supabase SQL Editor.
-
-2\. \*\*n8n:\*\* import `n8n/job-scraper-pipeline.json`, add your Supabase Postgres credential (use the \*\*Transaction Pooler\*\* connection details, not the direct connection — see \[tradeoffs](#tradeoffs-and-decisions)), and activate the workflow.
-
-3\. \*\*Python scripts:\*\* on your server, `pip install -r python/requirements.txt`, then set these environment variables (a crontab-level `SHELL=/bin/bash` plus inline variables — not `.bashrc` — see notes below):
-
-&#x20;  ```
-
-&#x20;  SUPABASE\_DB\_HOST, SUPABASE\_DB\_USER, SUPABASE\_DB\_PASSWORD, GROQ\_API\_KEY
-
-&#x20;  ```
-
-&#x20;  Schedule `analyze\_jobs.py` and `generate\_report.py` via cron, a few minutes apart.
-
-4\. \*\*Dashboard:\*\* `pip install -r streamlit\_app/requirements.txt`, set the same Supabase variables (as Streamlit secrets when deployed, env vars locally), then `streamlit run streamlit\_app/app.py`.
+| 🔧 \*\*Version control\*\* | Git + GitHub | This repo |
 
 
 
-\## Tradeoffs and decisions
+<details>
+
+<summary><b>Why not Power BI / a local LLM / Oracle Cloud? (click to expand)</b></summary>
 
 
 
-A few choices made deliberately, worth knowing if you're reviewing or extending this:
+\- \*\*Power BI over Streamlit\*\* — not used. Streamlit keeps everything in Python (same language as the analysis layer), deploys free, and demonstrates full-stack build ability rather than BI-tool configuration.
+
+\- \*\*Local Ollama over Groq\*\* — evaluated and rejected. The EC2 instance has \~1GB RAM, barely enough for n8n alone. A local LLM on top of that caused repeated out-of-memory crashes (see \[Problems hit and fixed](#-problems-hit-and-fixed)).
+
+\- \*\*Oracle Cloud over AWS\*\* — evaluated and rejected. Oracle's Always Free tier requires card verification with strict card-type rules and has known regional capacity issues. AWS, already available, proved more reliable in practice.
+
+\- \*\*Google Sheets export\*\* — planned, then deliberately cut. Postgres already serves as the single source of truth; a parallel Sheets export would add OAuth setup and another failure point for no real analytical benefit.
 
 
 
-\- \*\*AWS over Oracle Cloud Free Tier.\*\* Oracle's forever-free tier looked attractive on paper but requires card verification with strict card-type rules, and has known capacity/availability issues in some regions. AWS, which I already had access to, was more reliable in practice.
-
-\- \*\*Hosted LLM (Groq) over local Ollama.\*\* The EC2 instance has only \~1GB RAM — barely enough for n8n itself. Running a local LLM on top of that caused repeated out-of-memory crashes (see below). A free hosted API removed that failure mode entirely.
-
-\- \*\*Supabase's Transaction Pooler over Direct Connection.\*\* Direct connections default to IPv6, which the EC2 instance couldn't reach. The pooler also fits the access pattern better anyway — short, scheduled connections rather than one long-lived one.
-
-\- \*\*Single report row instead of full history.\*\* The `reports` table keeps only the most recent AI-generated summary, deleting older ones on each run, to keep the dashboard focused on "what's true right now" rather than an ever-growing archive.
-
-\- \*\*Google Sheets export dropped.\*\* The original plan included a parallel Google Sheets export for raw data. Since Postgres already serves as the single source of truth and queryable store, this was cut to avoid unnecessary OAuth setup and an extra point of failure for no real analytical benefit.
+</details>
 
 
 
-\## Problems hit and fixed
+\---
 
 
 
-This project surfaced a number of real operational issues, not just "happy path" development:
+\## Live dashboard
 
 
 
-\- \*\*Out-of-memory crash loops.\*\* n8n's Node process was silently killed by the Linux OOM killer on the 1GB-RAM instance. Diagnosed via `dmesg | grep -i "killed process"`, fixed with a swap file sized to balance memory headroom against limited disk space.
-
-\- \*\*Disk exhaustion, repeatedly.\*\* An 8GB root volume filled up multiple times from Docker images, n8n's execution history, and package caches. Fixed short-term via `apt clean`, `docker system prune`, and periodic `VACUUM` on n8n's SQLite database; fixed structurally by enabling `EXECUTIONS\_DATA\_PRUNE` and reducing the scrape schedule from every 6 hours to daily.
-
-\- \*\*Cron silently failing due to environment variables.\*\* Cron jobs calling `source \~/.bashrc` failed silently because non-interactive shells exit `.bashrc` early. Fixed by declaring environment variables directly in the crontab instead.
-
-\- \*\*n8n's schedule not firing despite being "Published."\*\* A newer n8n version replaced the classic Active/Inactive toggle with a Publish/Unpublish model; edits made after publishing didn't reliably re-register the schedule. Fixed by explicitly unpublishing and republishing after any settings change.
-
-\- \*\*Deprecated LLM model.\*\* The originally chosen Groq model (`llama-3.1-8b-instant`) was deprecated mid-project, returning HTTP 404. Swapped to Groq's current recommended model with no other code changes needed.
-
-\- \*\*Stale freshness tracking.\*\* The `last\_seen\_at` column, meant to track whether a posting is still live, was never actually updating on repeat scrapes — the upsert only set it via a database default on `INSERT`, which doesn't fire on `UPDATE`. Fixed by explicitly setting `last\_seen\_at = NOW()` in the upsert's column list.
-
-\- \*\*Single-source outages breaking the whole run.\*\* Arbeitnow returned an HTTP 521 (origin server down) on one occasion, which failed the entire n8n execution and blocked RemoteOK/Jobicy from saving data too. Fixed by enabling "Continue On Fail" on each source's HTTP Request node, so one source's outage no longer blocks the others.
+\*\*\[job-market-pipeliine.streamlit.app](https://job-market-pipeliine.streamlit.app/)\*\*
 
 
 
-\## Repo structure
+\- \*\*Overview page\*\* — total jobs, active/stale breakdown, a date-range explorer, top skills, and click-to-filter charts (click a bar, the job table below filters to match)
+
+\- \*\*Report page\*\* — the current AI-generated market summary, regenerated daily
+
+
+
+\---
+
+
+
+\## 🛠️ Setup
+
+
+
+<details>
+
+<summary><b>1. Database</b></summary>
+
+
+
+Run <code>sql/schema.sql</code> in your Supabase project's SQL Editor. This creates four tables:
+
+
+
+\- <code>raw\_jobs</code> — every deduplicated posting, with <code>scraped\_at</code> (first seen) and <code>last\_seen\_at</code> (most recently confirmed live)
+
+\- <code>analysis\_skill\_frequency</code> — timestamped skill-count snapshots
+
+\- <code>analysis\_role\_freshness</code> — timestamped active/cooling/stale classifications, one row per job per snapshot
+
+\- <code>reports</code> — the single current AI-generated summary
+
+
+
+</details>
+
+
+
+<details>
+
+<summary><b>2. n8n</b></summary>
+
+
+
+Import <code>n8n/job-scraper-pipeline.json</code>. You'll need to:
+
+1\. Add a Postgres credential using Supabase's <b>Transaction Pooler</b> connection details, not the direct connection — the direct connection defaults to IPv6, which most small VPS instances can't reach (see the troubleshooting notes below for the exact symptom this causes)
+
+2\. Set the Schedule Trigger to your preferred interval (daily, at a fixed hour, is what's used here)
+
+3\. Enable "Continue On Fail" on each of the three <code>HTTP Request</code> nodes, so one source being down doesn't block the other two
+
+4\. <b>Publish</b> the workflow — and if you ever edit it afterward, unpublish and republish again, since edits to a published workflow don't always re-register cleanly
+
+
+
+</details>
+
+
+
+<details>
+
+<summary><b>3. Python scripts (analysis + reporting)</b></summary>
+
+
+
+```bash
+
+pip install -r python/requirements.txt
+
+```
+
+
+
+Set these as environment variables — declared directly in the crontab itself (with a leading <code>SHELL=/bin/bash</code> line), not sourced from <code>.bashrc</code>, since cron's non-interactive shells exit <code>.bashrc</code> before reaching any <code>export</code> lines:
 
 
 
 ```
 
-├── n8n/                    # exported workflow + screenshot
+SUPABASE\_DB\_HOST
 
-├── python/                 # analysis + LLM report generation, run via cron
+SUPABASE\_DB\_USER
 
-├── sql/                    # database schema
+SUPABASE\_DB\_PASSWORD
 
-└── streamlit\_app/          # dashboard (deploy this folder's app.py to Streamlit Cloud)
+GROQ\_API\_KEY
 
 ```
+
+
+
+Schedule <code>analyze\_jobs.py</code> and <code>generate\_report.py</code> via cron, a few minutes apart — the report generator reads the analysis script's output, so it needs to run second.
+
+
+
+</details>
+
+
+
+<details>
+
+<summary><b>4. Dashboard</b></summary>
+
+
+
+```bash
+
+pip install -r streamlit\_app/requirements.txt
+
+streamlit run streamlit\_app/app.py
+
+```
+
+
+
+Set the same four Supabase variables as Streamlit secrets when deploying to Community Cloud (<code>shared.py</code> checks <code>st.secrets</code> first, falling back to environment variables for local runs — same code works in both places).
+
+
+
+</details>
+
+
+
+\---
+
+
+
+\## 🐛 Problems hit and fixed
+
+
+
+Building this surfaced real operational failures, not just "happy path" development — documented here because diagnosing and fixing them was most of the actual work.
+
+
+
+<details>
+
+<summary><b>Out-of-memory crash loops</b></summary>
+
+
+
+n8n's Node process was silently killed by the Linux OOM killer on the 1GB-RAM instance — it would start, run briefly, then get terminated with no error in n8n's own logs, because the kernel kills the process from outside rather than letting it fail gracefully. Diagnosed via <code>dmesg | grep -i "killed process"</code>, which showed the process's memory footprint at the moment of the kill (over 500MB — more than half the instance's total RAM). Fixed with a swap file, sized carefully to add memory headroom without eating too much of the already-tight disk space.
+
+</details>
+
+
+
+<details>
+
+<summary><b>Disk exhaustion, repeatedly</b></summary>
+
+
+
+An 8GB root volume filled up multiple times — from Docker's image layers, n8n's own execution history (which by default keeps every run's full input/output data), and accumulated package caches from routine <code>apt</code> operations. Fixed short-term via <code>apt clean</code>, <code>docker system prune</code>, and periodic <code>VACUUM</code> on n8n's SQLite database (deleting old rows doesn't shrink a SQLite file on its own — <code>VACUUM</code> is required to actually reclaim that space on disk). Fixed structurally by enabling <code>EXECUTIONS\_DATA\_PRUNE</code> to auto-limit history retention, and by reducing the scrape schedule from every 6 hours to daily to cut the growth rate.
+
+</details>
+
+
+
+<details>
+
+<summary><b>Cron silently failing due to environment variables</b></summary>
+
+
+
+Cron jobs calling <code>source \~/.bashrc</code> to load database credentials failed with "missing environment variable" errors — but only when run by cron, never when the same command was run manually in an interactive terminal. The cause: most <code>.bashrc</code> files have a guard clause near the top that exits immediately for non-interactive shells, which is exactly what cron uses. The <code>export</code> lines further down the file were never being reached. Fixed by declaring the environment variables directly at the top of the crontab file instead, where cron reads them natively.
+
+</details>
+
+
+
+<details>
+
+<summary><b>n8n's schedule not firing despite being "Published"</b></summary>
+
+
+
+A newer n8n version replaced the classic Active/Inactive toggle with a Publish/Unpublish model. The workflow showed as "Published" with a healthy green status, manual executions worked fine, but the Schedule Trigger simply never fired on its own — confirmed by checking the Executions tab, where every entry had the "manual run" icon and none had the "automatic" one. n8n's own documentation notes that edits made \*after\* publishing (which this workflow had — "Continue On Fail" was added post-publish) don't always cause the schedule to re-register. Fixed by explicitly unpublishing and republishing after any settings change, which forces a clean re-read of the trigger configuration.
+
+</details>
+
+
+
+<details>
+
+<summary><b>Deprecated LLM model</b></summary>
+
+
+
+The originally chosen Groq model (<code>llama-3.1-8b-instant</code>) started returning a plain HTTP 404 on every request, with no other error detail. Groq had deprecated the model shortly after this project started using it. Swapped to Groq's currently-recommended general-purpose model with a one-line change and no other code changes needed — a reminder that hardcoding a specific model name is a real maintenance liability, not just a config detail.
+
+</details>
+
+
+
+<details>
+
+<summary><b>Stale freshness tracking</b></summary>
+
+
+
+The whole point of <code>last\_seen\_at</code> is to answer "is this job still live?" — but it was frozen at the same value as <code>scraped\_at</code> for every single row, no matter how many times the pipeline had run since. The cause: the Postgres upsert node's column list only included <code>scraped\_at</code> and <code>last\_seen\_at</code> implicitly, via each column's database-level <code>DEFAULT now()</code> — which only fires on a brand-new <code>INSERT</code>. On every later run, when the same <code>job\_id</code> already existed, the node performed an <code>UPDATE</code> instead, and columns not explicitly listed in "Values to Send" are simply left untouched by an update. Fixed by explicitly adding <code>last\_seen\_at</code> to the upsert's column list with the expression <code>{{ $now }}</code>, so it's actively refreshed on every matching row, every run.
+
+</details>
+
+
+
+<details>
+
+<summary><b>A single source outage broke the entire run</b></summary>
+
+
+
+Arbeitnow returned an HTTP 521 (Cloudflare's "origin server is down" error) on one occasion — not a problem with this pipeline, just their API being temporarily unreachable. But because n8n's default behavior is to halt the entire execution on any single node's failure, RemoteOK and Jobicy's perfectly good, successfully-fetched data never got saved either — one dead API took the whole day's scrape down with it. Fixed by enabling "Continue On Fail" on each source's <code>HTTP Request</code> node individually, so a failure in one branch no longer prevents the other two from completing and writing their data.
+
+</details>
+
+
+
+\---
+
+
+
+\## 📁 Repo structure
+
+
+
+```
+
+├── n8n/                    exported workflow + screenshot
+
+├── python/                 analysis + LLM report generation, run via cron
+
+├── sql/                    database schema
+
+└── streamlit\_app/          dashboard (deploy this folder's app.py to Streamlit Cloud)
+
+```
+
+
+
+\---
+
+
+
+<div align="center">
+
+
+
+Built by \[Ravi Dhiman](https://github.com/raviidhiman)
+
+
+
+</div>
 
