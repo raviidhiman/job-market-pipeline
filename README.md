@@ -6,7 +6,7 @@ An end-to-end data pipeline that scrapes remote job postings from three sources,
 
 
 
-\*\*Live dashboard:\*\* \_add your Streamlit Cloud link here once deployed\_
+\*\*Live dashboard:\*\* https://job-market-pipeliine.streamlit.app/
 
 
 
