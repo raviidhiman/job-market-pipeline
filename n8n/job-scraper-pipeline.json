@@ -1,0 +1,1414 @@
+{
+  "updatedAt": "2026-09-10T04:02:27.763Z",
+  "createdAt": "2026-09-07T15:23:38.218Z",
+  "id": "xZT0A7wIrDXfIrtt",
+  "name": "job-scraper-pipeline",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -96,
+        -16
+      ],
+      "id": "9a8079d1-92f6-4ffa-ac13-ae4ce3d5a74d",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ed4e35da-ceec-46c1-812f-17c719d8ea48",
+              "leftValue": "={{ $json.position }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        352,
+        -176
+      ],
+      "id": "0f29716e-1c48-4320-bc43-9fe73684a3a8",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "371fa392-76b9-48b1-8f44-965c6525e844",
+              "name": "job_id",
+              "value": "={{ $json.slug }}",
+              "type": "string"
+            },
+            {
+              "id": "ea1ddc09-1386-4642-97a4-6a1334ed525a",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "f99a027a-29fc-4497-be32-4843648a946a",
+              "name": "company",
+              "value": "={{ $json.company_name }}",
+              "type": "string"
+            },
+            {
+              "id": "1be8fc3a-618f-40f4-81df-23179219103b",
+              "name": "location",
+              "value": "={{ $json.location }}",
+              "type": "string"
+            },
+            {
+              "id": "e2b8192b-406b-4b88-b6b3-652c0e341f84",
+              "name": "remote",
+              "value": "={{ $json.remote }}",
+              "type": "string"
+            },
+            {
+              "id": "7853bf31-4255-4d6b-9a82-a866cda9a490",
+              "name": "tags",
+              "value": "={{ $json.tags }}",
+              "type": "string"
+            },
+            {
+              "id": "df65ac84-aad7-43c6-be47-d9e13331cc0c",
+              "name": "url",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "76be8730-e263-4538-ad5c-c6a67b878c53",
+              "name": "posted_date",
+              "value": "={{ new Date($json.created_at * 1000).toISOString() }}",
+              "type": "string"
+            },
+            {
+              "id": "407064ab-c436-4c9b-8150-d91ad7fec576",
+              "name": "source",
+              "value": "arbeitnow",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        576,
+        -16
+      ],
+      "id": "9f90935c-76d3-4197-84a5-c0799bc79402",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        352,
+        -16
+      ],
+      "id": "10f9e441-b458-4d48-b537-1c5c3b31a98b",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "797c0e63-9b38-4484-b87b-6f484b3b5af4",
+              "name": "job_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "f3d41dfa-d44e-485a-95cd-4dc19832f7bb",
+              "name": "title",
+              "value": "={{ $json.jobTitle }}",
+              "type": "string"
+            },
+            {
+              "id": "a98b8f76-cc39-4466-b045-f00a05078b80",
+              "name": "company",
+              "value": "={{ $json.companyName }}",
+              "type": "string"
+            },
+            {
+              "id": "c6248135-20ad-4d97-9bb1-5878336477bd",
+              "name": "location",
+              "value": "={{ $json.jobGeo }}",
+              "type": "string"
+            },
+            {
+              "id": "42aa2447-ac27-47ec-8100-deb510d53892",
+              "name": "remote",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "8e043d14-7ff9-4775-90ae-f156f0157a2c",
+              "name": "tags",
+              "value": "={{ $json.jobIndustry }}",
+              "type": "string"
+            },
+            {
+              "id": "da6599a4-54e8-4af8-a963-a8acd9759122",
+              "name": "url",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "268720c2-cfe4-4623-b69e-7d7f59f2b262",
+              "name": "posted_date",
+              "value": "={{ $now }}",
+              "type": "string"
+            },
+            {
+              "id": "2bafc378-d0d7-4ad2-8d37-833f53d0d301",
+              "name": "source",
+              "value": "jobicy",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        576,
+        176
+      ],
+      "id": "0e00d3fa-72ab-42d7-96d4-ea09836514c4",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "url": "https://jobicy.com/api/v2/remote-jobs",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        128,
+        176
+      ],
+      "id": "063d4180-622b-4aac-94c5-fef6a84c76d7",
+      "name": "HTTP Request1",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "jobs",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        352,
+        176
+      ],
+      "id": "e8151acf-3282-4def-a961-be290779c8fe",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "url": "https://arbeitnow.com/api/job-board-api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        128,
+        -16
+      ],
+      "id": "7d73ac17-f6fa-4d95-9cfa-a814ed5426cb",
+      "name": "HTTP Request arbeitnow",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://remoteok.com/api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        128,
+        -176
+      ],
+      "id": "91be1815-4063-43ff-b3db-117f5d3310ba",
+      "name": "HTTP Request remote",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c4c0c783-146c-4e44-90dd-1c3acfa783c5",
+              "name": "job_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "e5b8bda4-f238-4939-bfd2-e12b7df16d49",
+              "name": "title",
+              "value": "={{ $json.position }}",
+              "type": "string"
+            },
+            {
+              "id": "3103deca-925d-485c-a47e-e38d1acd102a",
+              "name": "company",
+              "value": "={{ $json.company }}",
+              "type": "string"
+            },
+            {
+              "id": "1e4a8203-4df9-4551-90e4-2c728811d1fd",
+              "name": "location",
+              "value": "={{ $json.location }}",
+              "type": "string"
+            },
+            {
+              "id": "a3cf0880-4c2e-4ead-95d8-897386183da8",
+              "name": "remote",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "bee981bb-3dd7-4cea-9526-f56981dfd0dc",
+              "name": "tags",
+              "value": "={{ $json.tags }}",
+              "type": "string"
+            },
+            {
+              "id": "1e626dc3-d970-4bfa-b57c-3de61fded343",
+              "name": "url",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "a78a5d32-6a30-491c-8675-b40b8fa775fe",
+              "name": "posted_date",
+              "value": "={{ $json.date }}",
+              "type": "string"
+            },
+            {
+              "id": "dbdce21b-0c09-4fd3-b363-2ae6980b4de8",
+              "name": "source",
+              "value": "remoteok",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        576,
+        -176
+      ],
+      "id": "6cd895ae-b5ff-49ab-9a1b-f475ee5ab498",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        816,
+        -32
+      ],
+      "id": "4ee45935-e383-4b0a-8d68-c2c934fac0ef",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "raw_jobs",
+          "mode": "list",
+          "cachedResultName": "raw_jobs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "remote": "={{ $json.remote }}",
+            "job_id": "={{ $json.job_id }}",
+            "title": "={{ $json.title }}",
+            "company": "={{ $json.company }}",
+            "location": "={{ $json.location }}",
+            "tags": "={{ $json.tags }}",
+            "url": "={{ $json.url }}",
+            "source": "={{ $json.source }}",
+            "posted_date": "={{ $json.posted_date }}",
+            "last_seen_at": "={{ $now }}"
+          },
+          "matchingColumns": [
+            "job_id"
+          ],
+          "schema": [
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "remote",
+              "displayName": "remote",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "tags",
+              "displayName": "tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "posted_date",
+              "displayName": "posted_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "scraped_at",
+              "displayName": "scraped_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "last_seen_at",
+              "displayName": "last_seen_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1040,
+        -16
+      ],
+      "id": "35eb130e-33bb-49c6-9198-f351b383917f",
+      "name": "Insert or update rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "sJBRgZ0sfP591abT",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request remote",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request arbeitnow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request arbeitnow": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request remote": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Insert or update rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "Etc/UTC",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": {
+    "node:Schedule Trigger": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    }
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "ea89e88f-1aae-48d6-9fcc-6757e2efba9f",
+  "activeVersionId": "ea89e88f-1aae-48d6-9fcc-6757e2efba9f",
+  "versionCounter": 260,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "shared": [
+    {
+      "updatedAt": "2026-09-07T15:23:38.224Z",
+      "createdAt": "2026-09-07T15:23:38.224Z",
+      "role": "workflow:owner",
+      "workflowId": "xZT0A7wIrDXfIrtt",
+      "projectId": "3u0ymabNunJFgkk5",
+      "project": {
+        "updatedAt": "2026-09-07T15:19:39.556Z",
+        "createdAt": "2026-09-07T10:06:30.501Z",
+        "id": "3u0ymabNunJFgkk5",
+        "name": "Ravi Dhiman <raviidhiiman@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "f5b5c8b9-3ee6-42ee-8652-05e329becc79"
+      }
+    }
+  ],
+  "tags": [],
+  "parentFolder": null,
+  "activeVersion": {
+    "updatedAt": "2026-09-10T03:59:36.000Z",
+    "createdAt": "2026-09-10T03:57:32.689Z",
+    "versionId": "ea89e88f-1aae-48d6-9fcc-6757e2efba9f",
+    "workflowId": "xZT0A7wIrDXfIrtt",
+    "nodes": [
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {}
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.4,
+        "position": [
+          -96,
+          -16
+        ],
+        "id": "9a8079d1-92f6-4ffa-ac13-ae4ce3d5a74d",
+        "name": "Schedule Trigger"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "ed4e35da-ceec-46c1-812f-17c719d8ea48",
+                "leftValue": "={{ $json.position }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEmpty",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.filter",
+        "typeVersion": 2.3,
+        "position": [
+          352,
+          -176
+        ],
+        "id": "0f29716e-1c48-4320-bc43-9fe73684a3a8",
+        "name": "Filter"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "371fa392-76b9-48b1-8f44-965c6525e844",
+                "name": "job_id",
+                "value": "={{ $json.slug }}",
+                "type": "string"
+              },
+              {
+                "id": "ea1ddc09-1386-4642-97a4-6a1334ed525a",
+                "name": "title",
+                "value": "={{ $json.title }}",
+                "type": "string"
+              },
+              {
+                "id": "f99a027a-29fc-4497-be32-4843648a946a",
+                "name": "company",
+                "value": "={{ $json.company_name }}",
+                "type": "string"
+              },
+              {
+                "id": "1be8fc3a-618f-40f4-81df-23179219103b",
+                "name": "location",
+                "value": "={{ $json.location }}",
+                "type": "string"
+              },
+              {
+                "id": "e2b8192b-406b-4b88-b6b3-652c0e341f84",
+                "name": "remote",
+                "value": "={{ $json.remote }}",
+                "type": "string"
+              },
+              {
+                "id": "7853bf31-4255-4d6b-9a82-a866cda9a490",
+                "name": "tags",
+                "value": "={{ $json.tags }}",
+                "type": "string"
+              },
+              {
+                "id": "df65ac84-aad7-43c6-be47-d9e13331cc0c",
+                "name": "url",
+                "value": "={{ $json.url }}",
+                "type": "string"
+              },
+              {
+                "id": "76be8730-e263-4538-ad5c-c6a67b878c53",
+                "name": "posted_date",
+                "value": "={{ new Date($json.created_at * 1000).toISOString() }}",
+                "type": "string"
+              },
+              {
+                "id": "407064ab-c436-4c9b-8150-d91ad7fec576",
+                "name": "source",
+                "value": "arbeitnow",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          576,
+          -16
+        ],
+        "id": "9f90935c-76d3-4197-84a5-c0799bc79402",
+        "name": "Edit Fields"
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "data",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          352,
+          -16
+        ],
+        "id": "10f9e441-b458-4d48-b537-1c5c3b31a98b",
+        "name": "Split Out"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "797c0e63-9b38-4484-b87b-6f484b3b5af4",
+                "name": "job_id",
+                "value": "={{ $json.id }}",
+                "type": "string"
+              },
+              {
+                "id": "f3d41dfa-d44e-485a-95cd-4dc19832f7bb",
+                "name": "title",
+                "value": "={{ $json.jobTitle }}",
+                "type": "string"
+              },
+              {
+                "id": "a98b8f76-cc39-4466-b045-f00a05078b80",
+                "name": "company",
+                "value": "={{ $json.companyName }}",
+                "type": "string"
+              },
+              {
+                "id": "c6248135-20ad-4d97-9bb1-5878336477bd",
+                "name": "location",
+                "value": "={{ $json.jobGeo }}",
+                "type": "string"
+              },
+              {
+                "id": "42aa2447-ac27-47ec-8100-deb510d53892",
+                "name": "remote",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "8e043d14-7ff9-4775-90ae-f156f0157a2c",
+                "name": "tags",
+                "value": "={{ $json.jobIndustry }}",
+                "type": "string"
+              },
+              {
+                "id": "da6599a4-54e8-4af8-a963-a8acd9759122",
+                "name": "url",
+                "value": "={{ $json.url }}",
+                "type": "string"
+              },
+              {
+                "id": "268720c2-cfe4-4623-b69e-7d7f59f2b262",
+                "name": "posted_date",
+                "value": "={{ $now }}",
+                "type": "string"
+              },
+              {
+                "id": "2bafc378-d0d7-4ad2-8d37-833f53d0d301",
+                "name": "source",
+                "value": "jobicy",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          576,
+          176
+        ],
+        "id": "0e00d3fa-72ab-42d7-96d4-ea09836514c4",
+        "name": "Edit Fields1"
+      },
+      {
+        "parameters": {
+          "url": "https://jobicy.com/api/v2/remote-jobs",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          128,
+          176
+        ],
+        "id": "063d4180-622b-4aac-94c5-fef6a84c76d7",
+        "name": "HTTP Request1",
+        "onError": "continueErrorOutput"
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "jobs",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          352,
+          176
+        ],
+        "id": "e8151acf-3282-4def-a961-be290779c8fe",
+        "name": "Split Out1"
+      },
+      {
+        "parameters": {
+          "url": "https://arbeitnow.com/api/job-board-api",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          128,
+          -16
+        ],
+        "id": "7d73ac17-f6fa-4d95-9cfa-a814ed5426cb",
+        "name": "HTTP Request arbeitnow",
+        "onError": "continueErrorOutput"
+      },
+      {
+        "parameters": {
+          "url": "https://remoteok.com/api",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          128,
+          -176
+        ],
+        "id": "91be1815-4063-43ff-b3db-117f5d3310ba",
+        "name": "HTTP Request remote",
+        "onError": "continueErrorOutput"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "c4c0c783-146c-4e44-90dd-1c3acfa783c5",
+                "name": "job_id",
+                "value": "={{ $json.id }}",
+                "type": "string"
+              },
+              {
+                "id": "e5b8bda4-f238-4939-bfd2-e12b7df16d49",
+                "name": "title",
+                "value": "={{ $json.position }}",
+                "type": "string"
+              },
+              {
+                "id": "3103deca-925d-485c-a47e-e38d1acd102a",
+                "name": "company",
+                "value": "={{ $json.company }}",
+                "type": "string"
+              },
+              {
+                "id": "1e4a8203-4df9-4551-90e4-2c728811d1fd",
+                "name": "location",
+                "value": "={{ $json.location }}",
+                "type": "string"
+              },
+              {
+                "id": "a3cf0880-4c2e-4ead-95d8-897386183da8",
+                "name": "remote",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "bee981bb-3dd7-4cea-9526-f56981dfd0dc",
+                "name": "tags",
+                "value": "={{ $json.tags }}",
+                "type": "string"
+              },
+              {
+                "id": "1e626dc3-d970-4bfa-b57c-3de61fded343",
+                "name": "url",
+                "value": "={{ $json.url }}",
+                "type": "string"
+              },
+              {
+                "id": "a78a5d32-6a30-491c-8675-b40b8fa775fe",
+                "name": "posted_date",
+                "value": "={{ $json.date }}",
+                "type": "string"
+              },
+              {
+                "id": "dbdce21b-0c09-4fd3-b363-2ae6980b4de8",
+                "name": "source",
+                "value": "remoteok",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          576,
+          -176
+        ],
+        "id": "6cd895ae-b5ff-49ab-9a1b-f475ee5ab498",
+        "name": "Edit Fields2"
+      },
+      {
+        "parameters": {
+          "numberInputs": 3
+        },
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3.2,
+        "position": [
+          816,
+          -32
+        ],
+        "id": "4ee45935-e383-4b0a-8d68-c2c934fac0ef",
+        "name": "Merge"
+      },
+      {
+        "parameters": {
+          "operation": "upsert",
+          "schema": {
+            "__rl": true,
+            "value": "public",
+            "mode": "list",
+            "cachedResultName": "public"
+          },
+          "table": {
+            "__rl": true,
+            "value": "raw_jobs",
+            "mode": "list",
+            "cachedResultName": "raw_jobs"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "remote": "={{ $json.remote }}",
+              "job_id": "={{ $json.job_id }}",
+              "title": "={{ $json.title }}",
+              "company": "={{ $json.company }}",
+              "location": "={{ $json.location }}",
+              "tags": "={{ $json.tags }}",
+              "url": "={{ $json.url }}",
+              "source": "={{ $json.source }}",
+              "posted_date": "={{ $json.posted_date }}",
+              "last_seen_at": "={{ $now }}"
+            },
+            "matchingColumns": [
+              "job_id"
+            ],
+            "schema": [
+              {
+                "id": "job_id",
+                "displayName": "job_id",
+                "required": true,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true,
+                "removed": false
+              },
+              {
+                "id": "title",
+                "displayName": "title",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": false,
+                "removed": false
+              },
+              {
+                "id": "company",
+                "displayName": "company",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": false,
+                "removed": false
+              },
+              {
+                "id": "location",
+                "displayName": "location",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": false,
+                "removed": false
+              },
+              {
+                "id": "remote",
+                "displayName": "remote",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "boolean",
+                "canBeUsedToMatch": false,
+                "removed": false
+              },
+              {
+                "id": "tags",
+                "displayName": "tags",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "array",
+                "canBeUsedToMatch": false,
+                "removed": false
+              },
+              {
+                "id": "url",
+                "displayName": "url",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": false,
+                "removed": false
+              },
+              {
+                "id": "posted_date",
+                "displayName": "posted_date",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "dateTime",
+                "canBeUsedToMatch": false,
+                "removed": false
+              },
+              {
+                "id": "source",
+                "displayName": "source",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": false,
+                "removed": false
+              },
+              {
+                "id": "scraped_at",
+                "displayName": "scraped_at",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "dateTime",
+                "canBeUsedToMatch": false,
+                "removed": true
+              },
+              {
+                "id": "last_seen_at",
+                "displayName": "last_seen_at",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "dateTime",
+                "canBeUsedToMatch": false,
+                "removed": false
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.7,
+        "position": [
+          1040,
+          -16
+        ],
+        "id": "35eb130e-33bb-49c6-9198-f351b383917f",
+        "name": "Insert or update rows in a table",
+        "credentials": {
+          "postgres": {
+            "id": "sJBRgZ0sfP591abT",
+            "name": "Postgres account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Schedule Trigger": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request remote",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "HTTP Request1",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "HTTP Request arbeitnow",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Filter": {
+        "main": [
+          [
+            {
+              "node": "Edit Fields2",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Out": {
+        "main": [
+          [
+            {
+              "node": "Edit Fields",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request1": {
+        "main": [
+          [
+            {
+              "node": "Split Out1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Out1": {
+        "main": [
+          [
+            {
+              "node": "Edit Fields1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request arbeitnow": {
+        "main": [
+          [
+            {
+              "node": "Split Out",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request remote": {
+        "main": [
+          [
+            {
+              "node": "Filter",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Edit Fields": {
+        "main": [
+          [
+            {
+              "node": "Merge",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Edit Fields2": {
+        "main": [
+          [
+            {
+              "node": "Merge",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Edit Fields1": {
+        "main": [
+          [
+            {
+              "node": "Merge",
+              "type": "main",
+              "index": 2
+            }
+          ]
+        ]
+      },
+      "Merge": {
+        "main": [
+          [
+            {
+              "node": "Insert or update rows in a table",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Ravi Dhiman",
+    "name": "Version ea89e88f",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-09-10T03:59:36.501Z",
+        "id": 9,
+        "workflowId": "xZT0A7wIrDXfIrtt",
+        "versionId": "ea89e88f-1aae-48d6-9fcc-6757e2efba9f",
+        "event": "activated",
+        "userId": "f5b5c8b9-3ee6-42ee-8652-05e329becc79"
+      },
+      {
+        "createdAt": "2026-09-10T04:02:27.957Z",
+        "id": 11,
+        "workflowId": "xZT0A7wIrDXfIrtt",
+        "versionId": "ea89e88f-1aae-48d6-9fcc-6757e2efba9f",
+        "event": "activated",
+        "userId": "f5b5c8b9-3ee6-42ee-8652-05e329becc79"
+      },
+      {
+        "createdAt": "2026-09-10T04:02:27.926Z",
+        "id": 10,
+        "workflowId": "xZT0A7wIrDXfIrtt",
+        "versionId": "ea89e88f-1aae-48d6-9fcc-6757e2efba9f",
+        "event": "deactivated",
+        "userId": "f5b5c8b9-3ee6-42ee-8652-05e329becc79"
+      }
+    ]
+  },
+  "scopes": [
+    "execution:reveal",
+    "workflow:create",
+    "workflow:delete",
+    "workflow:disableRedaction",
+    "workflow:enableRedaction",
+    "workflow:execute",
+    "workflow:execute-chat",
+    "workflow:export",
+    "workflow:import",
+    "workflow:list",
+    "workflow:move",
+    "workflow:publish",
+    "workflow:read",
+    "workflow:share",
+    "workflow:unpublish",
+    "workflow:unshare",
+    "workflow:update"
+  ],
+  "checksum": "3ba7464b58efc8c4384daf78ab4015b45af92c5f507d0a0947398ef59e08a4c7"
+}
