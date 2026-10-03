@@ -7,13 +7,13 @@ on:
 
 jobs:
   wake-app:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Install Playwright
         run: |
@@ -36,31 +36,77 @@ jobs:
             const page = await browser.newPage();
 
             console.log("Opening Streamlit app...");
-
             await page.goto(process.env.APP_URL, {
               waitUntil: "domcontentloaded",
               timeout: 120000
             });
 
-            console.log("Page loaded:", await page.title());
-            console.log("URL:", page.url());
+            await page.waitForTimeout(5000);
 
-            const wakeButton = page.getByRole("button", {
-              name: /Yes, get this app back up!/i
-            });
+            console.log("Page title:", await page.title());
+            console.log("Current URL:", page.url());
 
-            if (await wakeButton.count() > 0) {
-              console.log("App is sleeping.");
-              console.log("Clicking wake button...");
+            const bodyText = await page.locator("body").innerText();
 
-              await wakeButton.first().click();
+            console.log("========== PAGE TEXT ==========");
+            console.log(bodyText.substring(0, 5000));
+            console.log("================================");
 
-              console.log("Waiting for app to start...");
+            if (
+              bodyText.includes("This app has gone to sleep") ||
+              bodyText.includes("Would you like to wake it back up") ||
+              bodyText.includes("Yes, get this app back up")
+            ) {
+              console.log("😴 STREAMLIT APP IS SLEEPING");
+
+              let clicked = false;
+
+              const button = page.getByRole("button", {
+                name: /Yes, get this app back up/i
+              });
+
+              if (await button.count() > 0) {
+                console.log("Found wake button using button role.");
+                await button.first().click();
+                clicked = true;
+              }
+
+              if (!clicked) {
+                const text = page.getByText(
+                  "Yes, get this app back up!",
+                  { exact: true }
+                );
+
+                if (await text.count() > 0) {
+                  console.log("Found wake button using text.");
+                  await text.first().click();
+                  clicked = true;
+                }
+              }
+
+              if (!clicked) {
+                console.log("Searching all buttons...");
+
+                const buttons = await page.locator("button").allTextContents();
+                console.log("Buttons found:", buttons);
+
+                throw new Error(
+                  "Streamlit is sleeping, but the wake button could not be clicked."
+                );
+              }
+
+              console.log("☀️ Wake button clicked successfully.");
+
               await page.waitForTimeout(30000);
 
-              console.log("App wake-up attempted.");
+              console.log("Checking app after wake attempt...");
+
+              console.log(
+                (await page.locator("body").innerText()).substring(0, 2000)
+              );
+
             } else {
-              console.log("App is already awake.");
+              console.log("✅ App appears to be awake.");
             }
 
             await browser.close();
