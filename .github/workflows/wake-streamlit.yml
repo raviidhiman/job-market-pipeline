@@ -1,45 +1,68 @@
-- name: Check and wake Streamlit
-  env:
-    APP_URL: https://job-market-pipeliine.streamlit.app
-  run: |
-    node <<'EOF'
-    const { chromium } = require("playwright");
+﻿name: Wake Streamlit App
 
-    (async () => {
-      const browser = await chromium.launch({
-        headless: true
-      });
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
 
-      const page = await browser.newPage();
+jobs:
+  wake-app:
+    runs-on: ubuntu-latest
 
-      console.log("Opening Streamlit app...");
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-      await page.goto(process.env.APP_URL, {
-        waitUntil: "domcontentloaded",
-        timeout: 120000
-      });
+      - name: Install Playwright
+        run: |
+          npm init -y
+          npm install playwright
+          npx playwright install --with-deps chromium
 
-      console.log("Page loaded:", await page.title());
-      console.log("URL:", page.url());
+      - name: Check and wake Streamlit
+        env:
+          APP_URL: https://job-market-pipeliine.streamlit.app/Report
+        run: |
+          node <<'EOF'
+          const { chromium } = require("playwright");
 
-      const wakeButton = page.getByRole("button", {
-        name: /Yes, get this app back up!/i
-      });
+          (async () => {
+            const browser = await chromium.launch({
+              headless: true
+            });
 
-      if (await wakeButton.count() > 0) {
-        console.log("App is sleeping.");
-        console.log("Clicking wake button...");
+            const page = await browser.newPage();
 
-        await wakeButton.first().click();
+            console.log("Opening Streamlit app...");
 
-        console.log("Waiting for app to start...");
-        await page.waitForTimeout(30000);
+            await page.goto(process.env.APP_URL, {
+              waitUntil: "domcontentloaded",
+              timeout: 120000
+            });
 
-        console.log("App wake-up attempted.");
-      } else {
-        console.log("App is already awake.");
-      }
+            console.log("Page loaded:", await page.title());
+            console.log("URL:", page.url());
 
-      await browser.close();
-    })();
-    EOF
+            const wakeButton = page.getByRole("button", {
+              name: /Yes, get this app back up!/i
+            });
+
+            if (await wakeButton.count() > 0) {
+              console.log("App is sleeping.");
+              console.log("Clicking wake button...");
+
+              await wakeButton.first().click();
+
+              console.log("Waiting for app to start...");
+              await page.waitForTimeout(30000);
+
+              console.log("App wake-up attempted.");
+            } else {
+              console.log("App is already awake.");
+            }
+
+            await browser.close();
+          })();
+          EOF
